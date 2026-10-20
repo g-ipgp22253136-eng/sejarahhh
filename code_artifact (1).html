@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-MY">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>马来西亚历史与国民意识 - 打地鼠大闯关</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js for Sound Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', 'Fredoka', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .hole {
+            background: linear-gradient(180deg, #422006 0%, #170b02 100%);
+            box-shadow: inset 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+            border-radius: 50% / 40%;
+        }
+
+        .hole::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 35%;
+            background: #271305;
+            border-radius: 50% 50% 0 0;
+            z-index: 20;
+            pointer-events: none;
+            border-top: 4px solid #1c0d03;
+        }
+
+        .mole {
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: translateY(110%);
+            position: absolute;
+            left: 5%;
+            right: 5%;
+            bottom: 10%;
+            height: 90%;
+            z-index: 10;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .mole.up {
+            transform: translateY(0%);
+        }
+
+        .mole.whacked {
+            animation: hit 0.3s ease-out forwards;
+        }
+
+        @keyframes hit {
+            0% { transform: scale(1) translateY(0); }
+            50% { transform: scale(0.85) translateY(15%); }
+            100% { transform: scale(1) translateY(110%); }
+        }
+
+        /* Custom scrollbar for game panels */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.5);
+        }
+
+        .star-burst {
+            animation: pulse 1.5s infinite alternate;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.08); }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col justify-between selection:bg-yellow-400 selection:text-black overflow-x-hidden">
+
+    <!-- Header / Navbar -->
+    <header class="bg-slate-800 border-b border-slate-700 py-3 px-4 sm:px-8 flex justify-between items-center shadow-lg relative z-30">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-yellow-500 to-amber-300 text-slate-900 font-extrabold p-2.5 rounded-xl shadow-md text-xl flex items-center justify-center">
+                <i class="fa-solid font-black fa-hammer"></i>
+            </div>
+            <div>
+                <h1 class="text-lg sm:text-2xl font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-red-400 to-blue-400">
+                    马来西亚历史打地鼠
+                </h1>
+                <p class="text-xs text-slate-400 hidden sm:block">单元八至十二 · 知识大挑战</p>
+            </div>
+        </div>
+
+        <!-- Sound & Fullscreen controls -->
+        <div class="flex items-center space-x-2 sm:space-x-4">
+            <button id="soundToggle" onclick="toggleSound()" class="p-2 sm:px-3 sm:py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-yellow-400 font-semibold transition flex items-center space-x-2 text-sm">
+                <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+                <span class="hidden md:inline">音效: 开</span>
+            </button>
+            <button onclick="showInstructions()" class="p-2 sm:px-3 sm:py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white font-semibold transition text-sm flex items-center space-x-1">
+                <i class="fa-solid fa-circle-question"></i>
+                <span class="hidden md:inline">玩法说明</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 flex flex-col justify-between relative z-10">
+        
+        <!-- TOP HUD: Stats -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4">
+            <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-2xl flex items-center justify-between shadow-md">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-trophy text-yellow-400 text-xl sm:text-2xl"></i>
+                    <span class="text-xs sm:text-sm font-semibold text-slate-300">得分</span>
+                </div>
+                <span id="scoreText" class="text-xl sm:text-2xl font-black text-yellow-400">0</span>
+            </div>
+
+            <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-2xl flex items-center justify-between shadow-md">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-heart text-red-500 text-xl sm:text-2xl"></i>
+                    <span class="text-xs sm:text-sm font-semibold text-slate-300">生命值</span>
+                </div>
+                <div id="livesContainer" class="flex space-x-1 text-red-500 text-base sm:text-lg">
+                    <i class="fa-solid fa-heart"></i>
+                    <i class="fa-solid fa-heart"></i>
+                    <i class="fa-solid fa-heart"></i>
+                </div>
+            </div>
+
+            <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-2xl flex items-center justify-between shadow-md">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-bolt text-amber-400 text-xl sm:text-2xl"></i>
+                    <span class="text-xs sm:text-sm font-semibold text-slate-300">连击</span>
+                </div>
+                <span id="comboText" class="text-xl sm:text-2xl font-black text-amber-400">0x</span>
+            </div>
+
+            <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-2xl flex items-center justify-between shadow-md">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-layer-group text-blue-400 text-xl sm:text-2xl"></i>
+                    <span class="text-xs sm:text-sm font-semibold text-slate-300">单元关卡</span>
+                </div>
+                <span id="unitBadge" class="text-xs sm:text-sm font-black text-blue-300 bg-blue-950 px-2 py-1 rounded-lg border border-blue-800 truncate max-w-[90px] sm:max-w-none">
+                    等待开始
+                </span>
+            </div>
+        </div>
+
+        <!-- Target Mission Board -->
+        <div id="missionCard" class="bg-gradient-to-r from-blue-900/80 via-slate-800/90 to-blue-900/80 border-2 border-blue-500/50 rounded-2xl p-4 mb-4 text-center shadow-xl backdrop-blur-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-red-500 to-blue-500"></div>
+            <p id="missionUnitTitle" class="text-xs font-bold uppercase tracking-widest text-blue-300 mb-1">选择关卡开始游戏</p>
+            <h2 id="missionQuestion" class="text-base sm:text-xl font-black text-white leading-snug">
+                敲击标有 <span class="text-green-400 underline decoration-green-500 decoration-2">正确知识</span> 的地鼠，避开 <span class="text-red-400 underline decoration-red-500 decoration-2">错误陷阱</span>！
+            </h2>
+        </div>
+
+        <!-- Whack-a-Mole Grid (6 Holes) -->
+        <div id="moleGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-6 my-auto py-2">
+            <!-- Hole 1 -->
+            <div class="hole h-36 sm:h-44 flex justify-center">
+                <div class="mole" onclick="whackMole(0)">
+                    <div class="mole-body bg-gradient-to-b from-amber-600 to-amber-800 border-2 border-amber-500 rounded-t-full w-full h-full p-2 flex flex-col justify-between items-center shadow-2xl relative">
+                        <!-- Head Decor -->
+                        <div class="flex items-center space-x-1 mt-1">
+                            <div class="w-2 sm:w-3 h-2 sm:h-3 bg-black rounded-full"></div>
+                            <div class="w-3 sm:w-4 h-2 sm:h-3 bg-pink-400/80 rounded-full"></div>
+                            <div class="w-2 sm:w-3 h-2 sm:h-3 bg-black rounded-full"></div>
+                        </div>
+                        <!-- Question Text Container -->
+                        <div class="bg-amber-950/90 border border-amber-600/50 rounded-xl p-1.5 sm:p-2 w-full my-auto text-center shadow-inner">
+                            <p class="mole-text text-[11px] sm:text-xs font-bold leading-tight text-amber-100 line-clamp-4">
+                                地鼠 1
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hole 2 -->
+            <div class="hole h-36 sm:h-44 flex justify-center">
+                <div class="mole" onclick="whackMole(1)">
+                    <div class="mole-body bg-gradient-to-b from-amber-600 to-amber-800 border-2 border-amber-500 rounded-t-full w-full h-full p-2 flex flex-col justify-between items-center shadow-2xl relative">
+                        <div class="flex items-center space-x-1 mt-1">
+                            <div class="w-2 sm:w-3 h-2 sm:h-3 bg-black rounded-full"></div>
+                            <div class="w-3 sm:w-4 h-2 sm:h-3 bg-pink-400/80 rounded-full"></div>
+                            <div class="w-2 sm:w-3 h-2 sm:h-3 bg-black rounded-full"></div>
+                        </div>
+                        <div class="bg-amber-950/90 border border-amber-600/50 rounded-xl p-1.5 sm:p-2 w-full my-auto text-center shadow-inner">
+                            <p class="mole-text text-[11px] sm:text-xs font-bold leading-tight text-amber-100 line-clamp-4">
+                                地鼠 2
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hole 3 -->
+            <div class="hole h-36 sm:h-44 flex justify-center">
+                <div class="mole" onclick="whackMole(2)">
+                    <div class="mole-body bg-gradient-to-b from-amber-600 to-amber-800 border-2 border-amber-500 rounded-t-full w-full h-full p-2 flex flex-col justify-between items-center shadow-2xl relative">
+                        <div class="flex items-center space-x-1 mt-1">
+                            <div class="w-2 sm:w-3 h-2 sm:h-3 bg-black rounded-full"></div>
+                            <div class="w-3 sm:w-4 h-2 sm:h-3 bg-pink-400/80 rounded-full"></div>
+                            <div class="w-2 sm:w-3 h-2 sm:h-3 bg-black rounded-full"></div>
+                        </div>
+                        <div class="bg-amber-950/90 border border-amber-600/50 rounded-xl p-1.5 sm:p-2 w-full my-auto text-center shadow-inner">
+                            <p class="mole-text text-[11px] sm:text-xs font-bold leading-tight text-amber-100 line-clamp-4">
+                                地鼠 3
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hole 4 -->
+            <div class="hole h-36 sm:h-44 flex justify-center">
+                <div class="mole" onclick="whackMole(3)">
+                    <div class="mole-body bg-gradient-to-b from-amber-600 to-amber-800 border-2 border-amber-500 rounded-t-full w-full h-full p-2 flex flex-col justify-between items-center shadow-2xl relative">
+                        <div class="flex items-center space-x-1 mt-1">
+                            <div class="w-2 sm:w-3 h-2 sm:h-3 bg-black rounded-full"></div>
+                            <div class="w-3 sm:w-4 h-2 sm:h-3 bg-pink-400/80 rounded-full"></div>
+                            <div class="w-2 sm:w-3 h-2 sm:h-3 bg-black rounded-full"></div>
+                        </div>
+                        <div class="bg-amber-950/90 border border-amber-600/50 rounded-xl p-1.5 sm:p-2 w-full my-auto text-center shadow-inner">
+                            <p class="mole-text text-[11px] sm:text-xs font-bold leading-tight text-amber-100 line-clamp-4">
+                                地鼠 4
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hole 5 -->
+            <div class="hole h-36 sm:h-44 flex justify-center">
+                <div class="mole" onclick="whackMole(4)">
+                    <div class="mole-body bg-gradient-to-b from-amber-600 to-amber-800 border-2 border-amber-500 rounded-t-full w-full h-full p-2 flex flex-col justify-between items-center shadow-2xl relative">
+                        <div class="flex items-center space-x-1 mt-1">
+                            <div class="w-2 sm:w-3 h-2 sm:h-3 bg-black rounded-full"></div>
+                            <div class="w-3 sm:w-4 h-2 sm:h-3 bg-pink-400/80 rounded-full"></div>
+                            <div class="w-2 sm:w-3 h-2 sm:h-3 bg-black rounded-full"></div>
+                        </div>
+                        <div class="bg-amber-950/90 border border-amber-600/50 rounded-xl p-1.5 sm:p-2 w-full my-auto text-center shadow-inner">
+                            <p class="mole-text text-[11px] sm:text-xs font-bold leading-tight text-amber-100 line-clamp-4">
+                                地鼠 5
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hole 6 -->
+            <div class="hole h-36 sm:h-44 flex justify-center">
+                <div class="mole" onclick="whackMole(5)">
+                    <div class="mole-body bg-gradient-to-b from-amber-600 to-amber-800 border-2 border-amber-500 rounded-t-full w-full h-full p-2 flex flex-col justify-between items-center shadow-2xl relative">
+                        <div class="flex items-center space-x-1 mt-1">
+                            <div class="w-2 sm:w-3 h-2 sm:h-3 bg-black rounded-full"></div>
+                            <div class="w-3 sm:w-4 h-2 sm:h-3 bg-pink-400/80 rounded-full"></div>
+                            <div class="w-2 sm:w-3 h-2 sm:h-3 bg-black rounded-full"></div>
+                        </div>
+                        <div class="bg-amber-950/90 border border-amber-600/50 rounded-xl p-1.5 sm:p-2 w-full my-auto text-center shadow-inner">
+                            <p class="mole-text text-[11px] sm:text-xs font-bold leading-tight text-amber-100 line-clamp-4">
+                                地鼠 6
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls / Level Selector -->
+        <div class="mt-4 flex flex-wrap gap-2 justify-center items-center">
+            <button onclick="selectUnit(0)" class="unit-btn px-3 py-2 bg-slate-800 hover:bg-yellow-600 border border-slate-700 rounded-xl font-bold text-xs sm:text-sm transition">
+                单元八：国徽
+            </button>
+            <button onclick="selectUnit(1)" class="unit-btn px-3 py-2 bg-slate-800 hover:bg-yellow-600 border border-slate-700 rounded-xl font-bold text-xs sm:text-sm transition">
+                单元九：国旗
+            </button>
+            <button onclick="selectUnit(2)" class="unit-btn px-3 py-2 bg-slate-800 hover:bg-yellow-600 border border-slate-700 rounded-xl font-bold text-xs sm:text-sm transition">
+                单元十：国歌
+            </button>
+            <button onclick="selectUnit(3)" class="unit-btn px-3 py-2 bg-slate-800 hover:bg-yellow-600 border border-slate-700 rounded-xl font-bold text-xs sm:text-sm transition">
+                单元十一：国语
+            </button>
+            <button onclick="selectUnit(4)" class="unit-btn px-3 py-2 bg-slate-800 hover:bg-yellow-600 border border-slate-700 rounded-xl font-bold text-xs sm:text-sm transition">
+                单元十二：国花
+            </button>
+            <button onclick="selectUnit(-1)" class="unit-btn px-3 py-2 bg-gradient-to-r from-red-600 to-yellow-600 hover:from-red-500 hover:to-yellow-500 rounded-xl font-black text-xs sm:text-sm transition shadow-md">
+                <i class="fa-solid fa-fire mr-1"></i>全单元混战
+            </button>
+        </div>
+    </main>
+
+    <!-- Overlay Modals -->
+
+    <!-- Start / Level Menu Modal -->
+    <div id="startModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border-2 border-slate-700 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl text-center space-y-6">
+            <div class="inline-block p-4 bg-gradient-to-tr from-yellow-500 to-amber-300 rounded-2xl text-slate-900 font-black text-4xl shadow-lg">
+                <i class="fa-solid fa-burst"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl sm:text-3xl font-black text-white">历史知识打地鼠</h2>
+                <p class="text-sm text-slate-400 mt-2">测试你对马来西亚国徽、国旗、国歌、国语及国花的认识！</p>
+            </div>
+
+            <!-- Mode Selection -->
+            <div class="space-y-3 text-left">
+                <label class="text-xs font-extrabold uppercase tracking-widest text-slate-400 block">选择想要挑战的单元关卡：</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button onclick="startGameWithUnit(0)" class="p-3 bg-slate-700/80 hover:bg-blue-600 border border-slate-600 hover:border-blue-400 rounded-xl flex items-center space-x-3 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-blue-900/80 text-blue-300 font-black flex items-center justify-center text-sm shrink-0">8</span>
+                        <div>
+                            <p class="font-bold text-sm text-white">单元八：国徽</p>
+                            <p class="text-[11px] text-slate-300">标志、象征意义与标语</p>
+                        </div>
+                    </button>
+
+                    <button onclick="startGameWithUnit(1)" class="p-3 bg-slate-700/80 hover:bg-blue-600 border border-slate-600 hover:border-blue-400 rounded-xl flex items-center space-x-3 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-red-900/80 text-red-300 font-black flex items-center justify-center text-sm shrink-0">9</span>
+                        <div>
+                            <p class="font-bold text-sm text-white">单元九：国旗</p>
+                            <p class="text-[11px] text-slate-300">辉煌条纹历史与特征</p>
+                        </div>
+                    </button>
+
+                    <button onclick="startGameWithUnit(2)" class="p-3 bg-slate-700/80 hover:bg-blue-600 border border-slate-600 hover:border-blue-400 rounded-xl flex items-center space-x-3 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-yellow-900/80 text-yellow-300 font-black flex items-center justify-center text-sm shrink-0">10</span>
+                        <div>
+                            <p class="font-bold text-sm text-white">单元十：国歌</p>
+                            <p class="text-[11px] text-slate-300">《我的国家》历史与礼仪</p>
+                        </div>
+                    </button>
+
+                    <button onclick="startGameWithUnit(3)" class="p-3 bg-slate-700/80 hover:bg-blue-600 border border-slate-600 hover:border-blue-400 rounded-xl flex items-center space-x-3 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-emerald-900/80 text-emerald-300 font-black flex items-center justify-center text-sm shrink-0">11</span>
+                        <div>
+                            <p class="font-bold text-sm text-white">单元十一：国语</p>
+                            <p class="text-[11px] text-slate-300">马来语法令与通用语演变</p>
+                        </div>
+                    </button>
+
+                    <button onclick="startGameWithUnit(4)" class="p-3 bg-slate-700/80 hover:bg-blue-600 border border-slate-600 hover:border-blue-400 rounded-xl flex items-center space-x-3 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-pink-900/80 text-pink-300 font-black flex items-center justify-center text-sm shrink-0">12</span>
+                        <div>
+                            <p class="font-bold text-sm text-white">单元十二：国花</p>
+                            <p class="text-[11px] text-slate-300">大红花与国家原则</p>
+                        </div>
+                    </button>
+
+                    <button onclick="startGameWithUnit(-1)" class="p-3 bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 border border-amber-400 rounded-xl flex items-center space-x-3 transition text-left col-span-1 sm:col-span-2">
+                        <span class="w-8 h-8 rounded-lg bg-black/40 text-yellow-300 font-black flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-star"></i></span>
+                        <div>
+                            <p class="font-extrabold text-sm text-white">综合大挑战（单元 8-12）</p>
+                            <p class="text-[11px] text-yellow-100">随机抽选所有单元的常识地鼠！</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over / Victory Result Modal -->
+    <div id="resultModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-800 border-2 border-slate-700 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl text-center space-y-5">
+            <div id="resultIcon" class="w-20 h-20 mx-auto rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-4xl border-2 border-yellow-500">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+
+            <div>
+                <h2 id="resultTitle" class="text-2xl sm:text-3xl font-black text-white">关卡完成！</h2>
+                <p id="resultSubtitle" class="text-sm text-slate-400 mt-1">你的历史常识非常扎实！</p>
+            </div>
+
+            <div class="bg-slate-900/80 border border-slate-700 rounded-2xl p-4 grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold">最终得分</p>
+                    <p id="finalScore" class="text-2xl font-black text-yellow-400">0</p>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold">最高连击</p>
+                    <p id="finalCombo" class="text-2xl font-black text-amber-400">0x</p>
+                </div>
+            </div>
+
+            <!-- Knowledge Recap Button -->
+            <button onclick="toggleRecap()" class="w-full py-2.5 px-4 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-xs sm:text-sm text-slate-200 flex items-center justify-center space-x-2 transition">
+                <i class="fa-solid fa-book-open"></i>
+                <span>查看本次答错 / 误扣知识点</span>
+            </button>
+
+            <!-- Recap panel -->
+            <div id="recapPanel" class="hidden text-left bg-slate-900 border border-slate-700 p-3 rounded-xl max-h-40 overflow-y-auto text-xs space-y-2">
+                <p class="font-bold text-amber-400 border-b border-slate-800 pb-1">重点复习：</p>
+                <ul id="recapList" class="space-y-1 text-slate-300 list-disc list-inside">
+                    <li>你没有踩到任何误区陷阱，太棒了！</li>
+                </ul>
+            </div>
+
+            <div class="flex space-x-3 pt-2">
+                <button onclick="restartGame()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-extrabold text-sm transition">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> 再玩一次
+                </button>
+                <button onclick="backToMenu()" class="py-3 px-4 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl font-extrabold text-sm transition">
+                    主菜单
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instruction Modal -->
+    <div id="instructionModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-800 border-2 border-slate-700 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                <h3 class="text-lg font-black text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-gamepad text-yellow-400"></i>
+                    <span>打地鼠游戏规则</span>
+                </h3>
+                <button onclick="closeInstructions()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                <div class="flex items-start space-x-3">
+                    <div class="bg-green-500/20 text-green-400 p-2 rounded-lg font-bold">1</div>
+                    <p><strong class="text-green-400">点击正确地鼠 (+10分)</strong>：出现符合历史课本正确知识叙述的地鼠，要快速敲击它！</p>
+                </div>
+                <div class="flex items-start space-x-3">
+                    <div class="bg-red-500/20 text-red-400 p-2 rounded-lg font-bold">2</div>
+                    <p><strong class="text-red-400">避开陷阱地鼠 (-1生命)</strong>：出现含有错误概念或干扰项的地鼠，千万不要打中它！</p>
+                </div>
+                <div class="flex items-start space-x-3">
+                    <div class="bg-amber-500/20 text-amber-400 p-2 rounded-lg font-bold">3</div>
+                    <p><strong class="text-amber-400">连击奖励 (Combo)</strong>：连续点击正确地鼠可触发倍数加分；漏掉正确地鼠不会扣分但会断连击。</p>
+                </div>
+            </div>
+
+            <button onclick="closeInstructions()" class="w-full py-2.5 bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-extrabold rounded-xl transition text-sm">
+                明白了，开始游玩！
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-2.5 px-4 text-center text-xs text-slate-300">
+        <p>马来西亚历史与国民意识课程配套 · 五年级单元八至十二</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- 游戏完整题库 (单元八 ~ 单元十二) ---
+        const questionBank = [
+            {
+                unitId: 0,
+                unitTitle: "单元八：马来西亚的国徽",
+                items: [
+                    // Corrects
+                    { text: "标语是“团结就是力量” (Bersekutu Bertambah Mutu)", correct: true, tip: "国徽上的缎带写着“团结就是力量”" },
+                    { text: "两只老虎象征“勇敢”", correct: true, tip: "国徽两侧的老虎象征勇敢" },
+                    { text: "黄色背景象征“王权”", correct: true, tip: "盾牌上方的黄色代表最高元首与统治者的王权" },
+                    { text: "五把短剑象征前无庇护下属州", correct: true, tip: "五把短剑象征玻璃市、吉打、吉兰丹、登嘉楼和柔佛" },
+                    { text: "槟榔树与槟威大桥象征槟城州", correct: true, tip: "槟榔树与大桥是槟城的象征标志" },
+                    { text: "甲必丹树 (Melaka) 象征马六甲州", correct: true, tip: "马六甲树代表马六甲州" },
+                    { text: "红、黑、白、黄四色象征前联邦州", correct: true, tip: "象征雪兰莪、霹雳、森美兰和彭亨" },
+                    // Wrongs
+                    { text: "标语是“勇敢与忠诚”", correct: false, tip: "错误！国徽标语是“团结就是力量”" },
+                    { text: "盾牌上的两只大象象征力量", correct: false, tip: "错误！国徽上的是老虎，不是大象" },
+                    { text: "盾牌上的红色象征王权", correct: false, tip: "错误！黄色才象征王权" },
+                    { text: "五把短剑象征国家原则的五大原则", correct: false, tip: "错误！短剑代表前无庇护下属州" },
+                    { text: "椰子树象征沙巴州", correct: false, tip: "错误！沙巴州徽上有神山与州徽图案" }
+                ]
+            },
+            {
+                unitId: 1,
+                unitTitle: "单元九：马来西亚的国旗",
+                items: [
+                    // Corrects
+                    { text: "国旗的官方名称是“辉煌条纹” (Jalur Gemilang)", correct: true, tip: "1997年第四任首相公布国旗名为辉煌条纹" },
+                    { text: "共有 14 条红白相间的条纹", correct: true, tip: "14条条纹象征13个州与1个联邦直辖区" },
+                    { text: "新月象征“伊斯兰教为联邦官方宗教”", correct: true, tip: "黄色新月代表伊斯兰教" },
+                    { text: "14角星（联邦之星）象征13州与联邦直辖区", correct: true, tip: "14个角象征全体州属与直辖区的团结" },
+                    { text: "国旗最早的设计者是莫哈末哈姆扎 (Mohamed Hamzah)", correct: true, tip: "设计者是来自柔佛的莫哈末哈姆扎建筑师" },
+                    { text: "蓝色底层象征“人民的团结”", correct: true, tip: "蓝色代表多元种族团结" },
+                    // Wrongs
+                    { text: "国旗名称叫做“五星红旗”", correct: false, tip: "错误！马来西亚国旗叫辉煌条纹" },
+                    { text: "国旗共有 13 条红白条纹", correct: false, tip: "错误！共有14条条纹" },
+                    { text: "新月象征“国家经济繁荣”", correct: false, tip: "错误！新月象征伊斯兰教" },
+                    { text: "14角星象征 14 个不同的民族", correct: false, tip: "错误！象征13个州及1个联邦直辖区" },
+                    { text: "国旗是由东姑阿都拉曼亲自画的", correct: false, tip: "错误！设计者是莫哈末哈姆扎" }
+                ]
+            },
+            {
+                unitId: 2,
+                unitTitle: "单元十：马来西亚的国歌",
+                items: [
+                    // Corrects
+                    { text: "国歌名为《我的国家》(Negaraku)", correct: true, tip: "国歌名称为 Negaraku" },
+                    { text: "曲调源自霹雳州州歌《Terang Bulan》", correct: true, tip: "选自霹雳州州歌曲调改编" },
+                    { text: "唱奏国歌时必须“肃立、挺胸”", correct: true, tip: "遵守礼仪：身体站直，目视前方" },
+                    { text: "听到国歌时，必须保持恭敬与专注", correct: true, tip: "表达对国家的尊重" },
+                    { text: "国歌歌词表达对君主与国家的忠诚", correct: true, tip: "祈求上苍赐福君主与国家" },
+                    // Wrongs
+                    { text: "国歌曲调源自沙巴州州歌", correct: false, tip: "错误！源自霹雳州州歌 Terang Bulan" },
+                    { text: "唱国歌时可以一边挥手一边吃东西", correct: false, tip: "错误！唱奏国歌时必须肃立" },
+                    { text: "听到国歌时可以随便走动开玩笑", correct: false, tip: "错误！必须立刻停下脚步肃立" },
+                    { text: "国歌只是在体育获奖时才播放的普通歌曲", correct: false, tip: "错误！国歌是国家尊严的象征" }
+                ]
+            },
+            {
+                unitId: 3,
+                unitTitle: "单元十一：马来语是国语",
+                items: [
+                    // Corrects
+                    { text: "《1967年国语法令》规定马来语为官方语言", correct: true, tip: "Akta Bahasa Kebangsaan 1967" },
+                    { text: "联邦宪法第 152 条文将马来语定为国语", correct: true, tip: "Perkara 152 Perlembagaan Persekutuan" },
+                    { text: "马六甲王朝时代曾是区域“通用语”(Lingua Franca)", correct: true, tip: "当时作为贸易与外交的通用语言" },
+                    { text: "国家语文局 (DBP) 负责推广与规范国语", correct: true, tip: "Dewan Bahasa dan Pustaka" },
+                    { text: "国语是促进多元种族团结的基石", correct: true, tip: "国语建立国民身份认同" },
+                    // Wrongs
+                    { text: "《国语法令》是在 2000 年颁布的", correct: false, tip: "错误！是在1967年颁布" },
+                    { text: "宪法第 10 条文规定英语为唯一国语", correct: false, tip: "错误！第152条文规定马来语为国语" },
+                    { text: "马来语只在马来西亚使用，从未是通用语", correct: false, tip: "错误！古时曾是东南亚商业通用语" },
+                    { text: "教育部语文组负责出版国家词典", correct: false, tip: "错误！主要是国家语文局 (DBP) 负责" }
+                ]
+            },
+            {
+                unitId: 4,
+                unitTitle: "单元十二：我们的国花大红花",
+                items: [
+                    // Corrects
+                    { text: "1960 年大红花（木槿花）被选为国花", correct: true, tip: "由第一任首相东姑阿都拉曼宣布" },
+                    { text: "红色花瓣象征“勇敢与毅力”", correct: true, tip: "红色代表勇敢与拼搏精神" },
+                    { text: "5片花瓣象征“国家原则”(Rukun Negara)", correct: true, tip: "五片花瓣对应国家原则的五条宣言" },
+                    { text: "第一项原则：信奉上苍 (Kepercayaan kepada Tuhan)", correct: true, tip: "第一条国家原则" },
+                    { text: "第二项原则：忠于君国 (Kesetiaan kepada Raja dan Negara)", correct: true, tip: "第二条国家原则" },
+                    { text: "第五项原则：培养德行 (Kesusilaan dan Kesopanan)", correct: true, tip: "第五条国家原则" },
+                    // Wrongs
+                    { text: "大红花是在 1957 年独立当天选为国花的", correct: false, tip: "错误！是在1960年被选为国花" },
+                    { text: "红色花瓣象征“财富与金钱”", correct: false, tip: "错误！象征勇敢与毅力" },
+                    { text: "5片花瓣象征马来西亚的 5 个主要民族", correct: false, tip: "错误！象征国家原则 (Rukun Negara)" },
+                    { text: "第一项国家原则是“忠于君国”", correct: false, tip: "错误！第一项是信奉上苍" },
+                    { text: "第五项国家原则是“维护宪法”", correct: false, tip: "错误！第五项是培养德行" }
+                ]
+            }
+        ];
+
+        // Game State Variables
+        let currentUnitIndex = 0; // -1 for All units
+        let score = 0;
+        let lives = 3;
+        let combo = 0;
+        let maxCombo = 0;
+        let isGameRunning = false;
+        let moleTimer = null;
+        let soundEnabled = true;
+
+        // Current active mole data in holes
+        let holesData = [null, null, null, null, null, null];
+        let wrongAttemptsLog = [];
+
+        // Audio Effects setup with Tone.js
+        let hitSynth, missSynth;
+
+        function initAudio() {
+            try {
+                hitSynth = new Tone.Synth({
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 }
+                }).toDestination();
+
+                missSynth = new Tone.Synth({
+                    oscillator: { type: "sawtooth" },
+                    envelope: { attack: 0.01, decay: 0.3, sustain: 0, release: 0.2 }
+                }).toDestination();
+            } catch(e) {
+                console.log("Audio init fallback");
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                Tone.start();
+                if (type === 'hit') {
+                    hitSynth.triggerAttackRelease("C5", "8n");
+                } else if (type === 'wrong') {
+                    missSynth.triggerAttackRelease("G2", "4n");
+                } else if (type === 'combo') {
+                    hitSynth.triggerAttackRelease("E5", "8n");
+                }
+            } catch(e) {}
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundToggle');
+            const icon = document.getElementById('soundIcon');
+            if (soundEnabled) {
+                btn.classList.remove('bg-red-900/60');
+                icon.className = 'fa-solid fa-volume-high';
+            } else {
+                btn.classList.add('bg-red-900/60');
+                icon.className = 'fa-solid fa-volume-xmark';
+            }
+        }
+
+        function showInstructions() {
+            document.getElementById('instructionModal').classList.remove('hidden');
+        }
+
+        function closeInstructions() {
+            document.getElementById('instructionModal').classList.add('hidden');
+        }
+
+        // --- Game Setup and Control ---
+
+        function selectUnit(index) {
+            currentUnitIndex = index;
+            // Highlight selected unit button
+            const btns = document.querySelectorAll('.unit-btn');
+            btns.forEach((b, i) => {
+                if (i === index || (index === -1 && i === btns.length - 1)) {
+                    b.classList.add('border-yellow-400', 'bg-yellow-600');
+                } else {
+                    b.classList.remove('border-yellow-400', 'bg-yellow-600');
+                }
+            });
+            restartGame();
+        }
+
+        function startGameWithUnit(index) {
+            currentUnitIndex = index;
+            document.getElementById('startModal').classList.add('hidden');
+            restartGame();
+        }
+
+        function restartGame() {
+            initAudio();
+            score = 0;
+            lives = 3;
+            combo = 0;
+            maxCombo = 0;
+            wrongAttemptsLog = [];
+            isGameRunning = true;
+
+            updateHUD();
+
+            // Set Mission Title
+            const titleElem = document.getElementById('missionUnitTitle');
+            const questElem = document.getElementById('missionQuestion');
+            const unitBadge = document.getElementById('unitBadge');
+
+            if (currentUnitIndex === -1) {
+                titleElem.innerText = "综合挑战模式";
+                questElem.innerHTML = `敲击所有来自 <span class="text-green-400 font-bold">单元8至12的正确知识地鼠</span>！`;
+                unitBadge.innerText = "8-12 综合";
+            } else {
+                const u = questionBank[currentUnitIndex];
+                titleElem.innerText = u.unitTitle;
+                questElem.innerHTML = `敲击属于 <span class="text-yellow-400 font-extrabold">${u.unitTitle}</span> 的 <span class="text-green-400 font-bold">正确地鼠</span>！`;
+                unitBadge.innerText = `单元 ${u.unitId + 8}`;
+            }
+
+            document.getElementById('resultModal').classList.add('hidden');
+
+            if (moleTimer) clearInterval(moleTimer);
+            // Spawn moles loop
+            moleTimer = setInterval(spawnMolesLoop, 1400);
+            spawnMolesLoop();
+        }
+
+        function updateHUD() {
+            document.getElementById('scoreText').innerText = score;
+            document.getElementById('comboText').innerText = combo + 'x';
+
+            // Lives display
+            const livesContainer = document.getElementById('livesContainer');
+            livesContainer.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                if (i < lives) {
+                    livesContainer.innerHTML += '<i class="fa-solid fa-heart text-red-500"></i>';
+                } else {
+                    livesContainer.innerHTML += '<i class="fa-regular fa-heart text-slate-600"></i>';
+                }
+            }
+        }
+
+        // --- Mole Spawning Logic ---
+
+        function getQuestionPool() {
+            if (currentUnitIndex === -1) {
+                // Combine all items
+                let pool = [];
+                questionBank.forEach(q => {
+                    pool = pool.concat(q.items);
+                });
+                return pool;
+            } else {
+                return questionBank[currentUnitIndex].items;
+            }
+        }
+
+        function spawnMolesLoop() {
+            if (!isGameRunning) return;
+
+            // Pick 1 to 3 holes to pop up
+            const pool = getQuestionPool();
+            const holes = document.querySelectorAll('.mole');
+            
+            // Retract old moles that weren't hit
+            holes.forEach((m, idx) => {
+                m.classList.remove('up', 'whacked');
+                holesData[idx] = null;
+            });
+
+            // Delay pop up slightly to sync
+            setTimeout(() => {
+                if (!isGameRunning) return;
+
+                const count = Math.floor(Math.random() * 2) + 2; // 2 or 3 moles
+                let selectedHoles = [];
+
+                while (selectedHoles.length < count) {
+                    let randomHole = Math.floor(Math.random() * 6);
+                    if (!selectedHoles.includes(randomHole)) {
+                        selectedHoles.push(randomHole);
+                    }
+                }
+
+                selectedHoles.forEach(holeIdx => {
+                    // Pick a random question item
+                    const qItem = pool[Math.floor(Math.random() * pool.length)];
+                    holesData[holeIdx] = qItem;
+
+                    const moleElem = holes[holeIdx];
+                    const textElem = moleElem.querySelector('.mole-text');
+                    textElem.innerText = qItem.text;
+
+                    // Apply visual cues depending on correctness (subtle color)
+                    const moleBody = moleElem.querySelector('.mole-body');
+                    moleBody.className = "mole-body bg-gradient-to-b from-amber-600 to-amber-800 border-2 border-amber-500 rounded-t-full w-full h-full p-2 flex flex-col justify-between items-center shadow-2xl relative";
+
+                    moleElem.classList.add('up');
+                });
+            }, 200);
+        }
+
+        // --- Whack Interaction ---
+
+        function whackMole(holeIndex) {
+            if (!isGameRunning) return;
+
+            const moleElem = document.querySelectorAll('.mole')[holeIndex];
+            if (!moleElem.classList.contains('up') || moleElem.classList.contains('whacked')) return;
+
+            const item = holesData[holeIndex];
+            if (!item) return;
+
+            moleElem.classList.add('whacked');
+
+            if (item.correct) {
+                // Correct Hit!
+                score += 10 + (combo * 2);
+                combo++;
+                if (combo > maxCombo) maxCombo = combo;
+                playSound(combo > 2 ? 'combo' : 'hit');
+
+                // Floating Text Effect
+                showFloatingText(moleElem, `+${10 + (combo*2)}`, 'text-green-400');
+            } else {
+                // Hit a Trap Mole!
+                score = Math.max(0, score - 5);
+                lives--;
+                combo = 0;
+                playSound('wrong');
+
+                // Log wrong attempt
+                wrongAttemptsLog.push(item);
+
+                // Floating Text Effect
+                showFloatingText(moleElem, `-1 ❤️`, 'text-red-500');
+
+                if (lives <= 0) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            updateHUD();
+        }
+
+        function showFloatingText(parentElement, text, colorClass) {
+            const float = document.createElement('div');
+            float.className = `absolute top-0 font-black text-xl ${colorClass} animate-bounce pointer-events-none z-30`;
+            float.innerText = text;
+            parentElement.appendChild(float);
+
+            setTimeout(() => {
+                float.remove();
+            }, 800);
+        }
+
+        // --- Game Over / Result ---
+
+        function gameOver() {
+            isGameRunning = false;
+            clearInterval(moleTimer);
+
+            // Hide all moles
+            document.querySelectorAll('.mole').forEach(m => m.classList.remove('up'));
+
+            const modal = document.getElementById('resultModal');
+            const title = document.getElementById('resultTitle');
+            const sub = document.getElementById('resultSubtitle');
+            const finalScoreElem = document.getElementById('finalScore');
+            const finalComboElem = document.getElementById('finalCombo');
+            const iconElem = document.getElementById('resultIcon');
+
+            finalScoreElem.innerText = score;
+            finalComboElem.innerText = maxCombo + 'x';
+
+            if (lives <= 0) {
+                title.innerText = "再接再厉！";
+                title.className = "text-2xl sm:text-3xl font-black text-red-400";
+                sub.innerText = "误踩了太多的错误陷阱地鼠。";
+                iconElem.className = "w-20 h-20 mx-auto rounded-full bg-red-500/20 text-red-500 flex items-center justify-center text-4xl border-2 border-red-500";
+                iconElem.innerHTML = '<i class="fa-solid fa-heart-crack"></i>';
+            } else {
+                title.innerText = "知识大通关！";
+                title.className = "text-2xl sm:text-3xl font-black text-yellow-400";
+                sub.innerText = "你掌握了非常丰富的国家常识！";
+                iconElem.className = "w-20 h-20 mx-auto rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-4xl border-2 border-yellow-500";
+                iconElem.innerHTML = '<i class="fa-solid fa-trophy"></i>';
+            }
+
+            // Populate Recap List
+            const recapList = document.getElementById('recapList');
+            recapList.innerHTML = '';
+            if (wrongAttemptsLog.length === 0) {
+                recapList.innerHTML = '<li class="text-green-400">太棒了！你没有被任何陷阱地鼠误导！</li>';
+            } else {
+                // Unique wrong logs
+                const uniqueLog = [...new Set(wrongAttemptsLog.map(a => a.tip))];
+                uniqueLog.forEach(tip => {
+                    recapList.innerHTML += `<li>${tip}</li>`;
+                });
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function toggleRecap() {
+            const panel = document.getElementById('recapPanel');
+            panel.classList.toggle('hidden');
+        }
+
+        function backToMenu() {
+            document.getElementById('resultModal').classList.add('hidden');
+            document.getElementById('startModal').classList.remove('hidden');
+        }
+
+        // Initialize default view
+        window.onload = function() {
+            // Modal stays visible until user clicks start
+        }
+    </script>
+</body>
+</html>
